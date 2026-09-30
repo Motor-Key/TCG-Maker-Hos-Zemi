@@ -3,507 +3,678 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>オリジナルTCG 公式ポータルサイト v5</title>
+    <title>自作TCG オリジナルカードジェネレーター v8 (スマホ完全対応版)</title>
     <style>
-        :root {
-            --primary-color: #0056b3;
-            --secondary-color: #f8f9fa;
-            --text-color: #333;
-            --bg-color: #edf2f7;
-            --danger-color: #e53e3e;
-        }
         body {
-            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-        }
-        header {
-            background-color: #1a202c;
-            color: white;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .header-container {
-            max-width: 1200px;
-            margin: 0 auto;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f0f2f5;
             display: flex;
-            justify-content: space-between;
+            padding: 20px;
+            gap: 30px;
+            /* スマホ操作時の不自然なハイライトを防止 */
+            -webkit-tap-highlight-color: transparent;
+        }
+        .control-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            width: 380px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 90vh;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        .control-panel label {
+            font-weight: bold;
+            font-size: 13px;
+            color: #444;
+            margin-bottom: -4px;
+        }
+        .control-panel input[type="text"], .control-panel textarea, .control-panel input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+        .control-panel input[type="range"] {
+            width: 100%;
+            margin-top: 5px;
+            margin-bottom: 5px;
+        }
+        .control-panel textarea {
+            height: 80px;
+            resize: vertical;
+        }
+        .burst-panel {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            background-color: #fcfcfc;
+            border: 2px dashed #ccc;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 5px;
+        }
+        .burst-panel textarea {
+            height: 60px;
+        }
+        .checkbox-label {
+            display: flex;
             align-items: center;
-            padding: 15px 20px;
+            gap: 8px;
+            cursor: pointer;
+            padding: 8px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            transition: 0.2s;
         }
-        .logo { font-size: 24px; font-weight: bold; letter-spacing: 1px; cursor: pointer; }
-        nav { display: flex; gap: 5px; }
-        .nav-btn {
-            background: none; border: none; color: #a0aec0; font-size: 16px;
-            font-weight: bold; padding: 10px 15px; border-radius: 6px; cursor: pointer; transition: 0.2s;
+        .checkbox-label:hover {
+            background-color: #dde2e6;
         }
-        .nav-btn:hover { background-color: #2d3748; color: white; }
-        .nav-btn.active { background-color: var(--primary-color); color: white; }
-        
-        main { max-width: 1200px; margin: 30px auto; padding: 0 20px; min-height: 80vh; }
-        .page-section {
-            display: none; background: white; padding: 40px; border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05); animation: fadeIn 0.3s ease-in-out;
+        .checkbox-label input {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
         }
-        .page-section.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        h1 { border-bottom: 3px solid var(--primary-color); padding-bottom: 10px; margin-top: 0; }
-        h2 { color: var(--primary-color); border-left: 5px solid var(--primary-color); padding-left: 15px; margin-top: 40px; }
-        
-        /* 検索周りのスタイル */
-        .search-container { background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0; }
-        .search-container input, .search-container select { padding: 10px; border: 1px solid #ccc; border-radius: 4px; margin-right: 10px; margin-bottom: 10px; font-size: 16px; }
-        .search-btn { background-color: var(--primary-color); color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 16px; }
-        .search-btn:hover { background-color: #004494; }
-        
-        /* カードのデザイン */
-        .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-        .card-item { background: white; border: 2px solid #e2e8f0; border-radius: 8px; padding: 15px; transition: 0.2s; position: relative; }
-        .card-item:hover { transform: translateY(-5px); box-shadow: 0 10px 15px rgba(0,0,0,0.1); border-color: #cbd5e0; }
-        .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 10px; }
-        .card-name-area { flex: 1; }
-        .card-ruby { font-size: 11px; color: #718096; margin-bottom: -2px; }
-        .card-name { font-size: 20px; font-weight: bold; color: #1a202c; margin: 0; }
-        .card-cost { font-size: 24px; font-weight: bold; background-color: #edf2f7; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 2px solid #cbd5e0; }
-        .card-type { font-size: 14px; font-weight: bold; color: #4a5568; background-color: #e2e8f0; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-bottom: 10px; }
-        .card-effect { font-size: 14px; line-height: 1.6; color: #2d3748; background-color: #f7fafc; padding: 10px; border-radius: 6px; min-height: 60px; white-space: pre-wrap; }
-        .card-stats { display: flex; justify-content: flex-end; gap: 15px; margin-top: 15px; font-weight: bold; font-size: 16px; }
-        .card-power { color: #d63384; } .card-damage { color: #0d6efd; }
-        
-        .attr-red .card-cost { background-color: #ffeaea; border-color: #ff4444; color: #ff4444; }
-        .attr-blue .card-cost { background-color: #eaebff; border-color: #4444ff; color: #4444ff; }
-        .attr-green .card-cost { background-color: #eaffea; border-color: #44aa44; color: #44aa44; }
-        .attr-yellow .card-cost { background-color: #fffcea; border-color: #ffcc00; color: #d4a700; }
-        .attr-orange .card-cost { background-color: #fff3ea; border-color: #ff8800; color: #ff8800; }
-        .attr-purple .card-cost { background-color: #f5eaff; border-color: #aa44cc; color: #aa44cc; }
-        
-        .text-red { color: #d9534f; font-weight: bold; } .text-blue { color: #0275d8; font-weight: bold; }
-        .text-green { color: #5cb85c; font-weight: bold; } .text-purple { color: #8e44ad; font-weight: bold; }
-        .text-orange { color: #f39c12; font-weight: bold; } .text-yellow { color: #f0ad4e; font-weight: bold; }
+        .preview-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            max-width: 500px;
+        }
+        canvas {
+            background-color: white;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            border-radius: 16px;
+            user-select: none;
+            -webkit-user-select: none;
+            width: 100%;
+            height: auto;
+            /* スマホでドラッグ中に画面全体がスクロールしてしまうのを防ぐ */
+            touch-action: none; 
+        }
+        button {
+            padding: 12px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .help-text {
+            font-size: 11px;
+            color: #888;
+            margin-top: -8px;
+            margin-bottom: 4px;
+        }
+        .notice {
+            font-size: 12px;
+            color: #d9534f;
+            font-weight: bold;
+            background-color: #fdf7f7;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #f2dede;
+        }
+        code {
+            background-color: #eee;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
 
-        /* デッキビルダー専用のスタイル（v5新規） */
-        .deck-builder-layout { display: flex; gap: 20px; align-items: flex-start; }
-        .deck-left-pane { flex: 2; }
-        .deck-right-pane { flex: 1; background: #f8f9fa; border: 2px solid #e2e8f0; border-radius: 8px; padding: 15px; position: sticky; top: 80px; max-height: 80vh; overflow-y: auto; }
-        .deck-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
-        .deck-card-grid .card-item { cursor: pointer; border-width: 3px; border-color: transparent; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .deck-card-grid .card-item:hover { border-color: var(--primary-color); }
-        .deck-status-box { text-align: center; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 2px dashed #cbd5e0; }
-        .deck-count { font-size: 32px; font-weight: bold; color: var(--primary-color); margin: 10px 0; }
-        .deck-count.error { color: var(--danger-color); }
-        .deck-list { list-style: none; padding: 0; margin: 0; }
-        .deck-list-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-bottom: 1px solid #e2e8f0; background: white; cursor: pointer; font-weight: bold; font-size: 14px; }
-        .deck-list-item:hover { background-color: #fee2e2; color: var(--danger-color); }
-        .deck-list-item::after { content: '削除 ×'; font-size: 11px; opacity: 0; transition: 0.2s; }
-        .deck-list-item:hover::after { opacity: 1; }
-        .card-count-badge { background: #4a5568; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; }
-        .btn-clear { background-color: #718096; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 10px; }
-        .btn-clear:hover { background-color: var(--danger-color); }
-        
-        details { background-color: #f8f9fa; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 15px; padding: 10px 20px; }
-        summary { font-weight: bold; cursor: pointer; font-size: 18px; padding: 10px 0; outline: none; }
-        details p { margin-top: 10px; padding-top: 15px; border-top: 1px dashed #cbd5e0; color: #4a5568; white-space: pre-wrap; }
-        
-        .primary-link-btn { display: inline-block; background-color: var(--primary-color); color: white; text-decoration: none; padding: 15px 30px; border-radius: 8px; font-weight: bold; font-size: 18px; margin-top: 20px; transition: 0.2s; }
-        .primary-link-btn:hover { background-color: #004494; }
-        .loading-text { text-align: center; color: #718096; font-weight: bold; padding: 20px; grid-column: 1 / -1; }
-
-        @media (max-width: 900px) {
-            .deck-builder-layout { flex-direction: column; }
-            .deck-right-pane { position: static; width: 100%; box-sizing: border-box; max-height: none; }
-        }
+        /* スマホ向けのレスポンシブ対応 */
         @media (max-width: 768px) {
-            .header-container { flex-direction: column; gap: 15px; }
-            nav { width: 100%; overflow-x: auto; white-space: nowrap; padding-bottom: 5px; }
-            .page-section { padding: 20px; }
-            .search-container input, .search-container select { width: 100%; box-sizing: border-box; }
-            .search-btn { width: 100%; }
+            body {
+                flex-direction: column; /* 縦並びに変更 */
+                padding: 10px;
+            }
+            .control-panel {
+                width: 100%;
+                max-height: none; /* スマホではスクロールバーを分けない */
+                box-sizing: border-box;
+            }
+            .preview-panel {
+                width: 100%;
+                max-width: 100%;
+            }
         }
     </style>
 </head>
 <body>
 
-    <header>
-        <div class="header-container">
-            <div class="logo" onclick="switchTab('home')">TCG Portal</div>
-            <nav>
-                <button class="nav-btn active" onclick="switchTab('home')" id="tab-home">ホーム</button>
-                <button class="nav-btn" onclick="switchTab('rules')" id="tab-rules">ルール</button>
-                <button class="nav-btn" onclick="switchTab('cards')" id="tab-cards">カードリスト</button>
-                <button class="nav-btn" onclick="switchTab('deck')" id="tab-deck">デッキ構築</button>
-                <button class="nav-btn" onclick="switchTab('faq')" id="tab-faq">FAQ・裁定</button>
-                <button class="nav-btn" onclick="switchTab('contact')" id="tab-contact">お問い合わせ</button>
-            </nav>
+    <!-- プレビュー画面をスマホでは一番上に持ってくる（CSSのorderプロパティの代わり） -->
+    <div class="preview-panel">
+        <canvas id="cardCanvas" width="650" height="908"></canvas>
+    </div>
+
+    <div class="control-panel">
+        <h2>カード情報入力</h2>
+        
+        <label>ルビ（ふりがな）</label>
+        <input type="text" id="cardRuby" value="ここにルビを入力">
+
+        <label>カード名</label>
+        <input type="text" id="cardName" value="ここに名前を入力">
+        
+        <label>カードイラスト</label>
+        <div class="notice">💡 画像枠の中をドラッグ（スワイプ）すると切り抜き位置を調整できます！</div>
+        <input type="file" id="imageInput" accept="image/*">
+        
+        <label>イラスト拡大・縮小</label>
+        <input type="range" id="imageZoom" min="1" max="3" step="0.01" value="1">
+        
+        <label>種類・特性</label>
+        <input type="text" id="cardType" value="サモン / 特性">
+        
+        <label>合計コスト (数字)</label>
+        <input type="text" id="totalCost" value="7">
+
+        <label>色コスト</label>
+        <div class="help-text">「赤赤赤」など漢字で入力（赤,青,黄,緑,橙,紫）</div>
+        <input type="text" id="colorCost" value="赤赤赤赤赤">
+        
+        <label>通常効果テキスト</label>
+        <div class="help-text">※ <code>[赤]文字[/赤]</code> のように囲むと色が変わります。(赤,青,緑,黄,橙,紫)</div>
+        <textarea id="cardEffect">ここにテキストを入力</textarea>
+        
+        <!-- バースト機能切り替えスイッチ -->
+        <label class="checkbox-label">
+            <input type="checkbox" id="enableBurst"> 
+            💥 バースト効果エリアを追加する
+        </label>
+        
+        <!-- バースト設定パネル -->
+        <div class="burst-panel" id="burstPanel">
+            <label>バースト種類 (例: 【バースト：AB】)</label>
+            <input type="text" id="burstType" value="【バースト：AB】">
+            
+            <label>バースト合計コスト (数字)</label>
+            <input type="text" id="burstTotalCost" value="3">
+            
+            <label>バースト色コスト (漢字)</label>
+            <input type="text" id="burstColorCost" value="赤赤赤">
+            
+            <label>バースト効果テキスト</label>
+            <div class="help-text">※ <code>[青]文字[/青]</code> のように色指定タグが使えます。</div>
+            <textarea id="burstEffect">ここにバーストテキスト</textarea>
         </div>
-    </header>
+        
+        <label>パワー</label>
+        <input type="text" id="cardPower" value="8000">
+        
+        <label>打点</label>
+        <input type="text" id="cardDamage" value="7">
 
-    <main>
-        <section id="page-home" class="page-section active">
-            <h1>Welcome to TCG Portal</h1>
-            <p>ここはオリジナルTCGの公式ポータルサイトです。<br>上のメニューからルールブックの確認、カードの検索、デッキの構築が行えます。</p>
-        </section>
-
-        <!-- ★ ご記入いただいた完璧なルールの文章です！ ★ -->
-        <section id="page-rules" class="page-section">
-            <h1>遊び方・基本ルール</h1>
-            
-            <h2>1. 勝利条件</h2>
-            <p>以下のいずれかの条件を満たした時、あなたはゲームに勝利します。</p>
-            <ul>
-                <li><strong>ライフの枯渇：</strong> 相手のライフが「0」になる。</li>
-                <li><strong>デッキアウト：</strong> 相手のデッキを「0枚」にする。</li>
-            </ul>
-
-            <h2>2．ゲーム開始準備</h2>
-            <p>デッキは全部で40枚です。多くても少なくてもいけません。</p>
-            <ul>
-                <li>同名カードはデッキに3枚まで入れることができます。 </li>
-            </ul>
-            <p>お互いにライフ20を持ち、デッキから5枚を引いて手札にします。</p>
-
-            <h2>3. ターンの流れ（基本）</h2>
-            <p>各プレイヤーは、自分のターンに以下の順番でステップを進行します。</p>
-            <ul>
-                <li><strong>① スタートステップ：</strong> デッキからカードを1枚引き、自分の手番を迎えます。</li>
-                <li><strong>② メインステップ：</strong> コストを支払い、カード（サモンカード、スペルカード）のプレイを行います。攻撃もこのステップ内で行います。</li>
-                <li><strong>③ エンドステップ：</strong> ターンを終了し、相手に手番を渡します。</li>
-            </ul>
-
-            <h2 style="margin-top: 60px; border-left: none; text-align: center; color: #1a202c;">詳細なルール・裁定を知りたい方へ</h2>
-            <p style="text-align: center;">より厳密なテキストの裁定や詳細なルールについては、<br>以下の「総合ゲームルール」をご確認ください。</p>
-            
-            <div style="text-align: center; padding: 20px;">
-                <a href="#" class="primary-link-btn" target="_blank" style="background-color: #2d3748;">📖 総合ゲームルール（詳細版）を読む</a>
-            </div>
-        </section>
-
-        <section id="page-cards" class="page-section">
-            <h1>カードデータベース</h1>
-            <div class="search-container">
-                <input type="text" id="searchKeyword" placeholder="カード名やテキストで検索..." onkeyup="if(event.key==='Enter') filterCards('cards-container')">
-                <select id="searchColor">
-                    <option value="">すべての色</option>
-                    <option value="赤">赤</option><option value="青">青</option><option value="緑">緑</option>
-                    <option value="黄">黄</option><option value="橙">橙</option><option value="紫">紫</option>
-                </select>
-                <button class="search-btn" onclick="filterCards('cards-container')">検索する</button>
-            </div>
-            <div id="cards-container" class="card-grid">
-                <p class="loading-text">🔄 データベースからカード情報を読み込み中...</p>
-            </div>
-        </section>
-
-        <!-- ★ 新規：デッキビルダー画面（2分割レイアウト） ★ -->
-        <section id="page-deck" class="page-section">
-            <h1>デッキビルダー</h1>
-            <p>左のリストからカードをクリックしてデッキに追加します。（※ブラウザを閉じても内容は保存されます）</p>
-            
-            <div class="deck-builder-layout">
-                <!-- 左側：カードプール -->
-                <div class="deck-left-pane">
-                    <div class="search-container" style="padding: 15px; margin-bottom: 15px;">
-                        <input type="text" id="deckSearchKeyword" placeholder="カード名で検索..." onkeyup="if(event.key==='Enter') filterCards('deck-cards-container')">
-                        <button class="search-btn" onclick="filterCards('deck-cards-container')" style="padding: 8px 15px;">検索</button>
-                    </div>
-                    <div id="deck-cards-container" class="deck-card-grid">
-                        <p class="loading-text">🔄 カード情報を読み込み中...</p>
-                    </div>
-                </div>
-
-                <!-- 右側：デッキの中身 -->
-                <div class="deck-right-pane">
-                    <div class="deck-status-box">
-                        <h3>現在のデッキ枚数</h3>
-                        <div id="deck-count-display" class="deck-count">0 / 40</div>
-                        <p style="font-size: 12px; color: #718096;">同名カードは3枚まで</p>
-                    </div>
-                    <ul id="deck-list-display" class="deck-list">
-                        <!-- ここにデッキのカードが並びます -->
-                    </ul>
-                    <button class="btn-clear" onclick="clearDeck()">🗑️ デッキをすべて空にする</button>
-                </div>
-            </div>
-        </section>
-
-        <section id="page-faq" class="page-section">
-            <h1>FAQ・よくある質問と裁定</h1>
-            <div id="faq-container">
-                <p class="loading-text">🔄 データベースから最新の裁定を読み込み中...</p>
-            </div>
-        </section>
-
-        <section id="page-contact" class="page-section">
-            <h1>お問い合わせ・ご意見</h1>
-            <div style="text-align: center; padding: 30px;">
-                <a href="https://docs.google.com/forms/d/e/1FAIpQLSctrPMxXdnsAHFTtAs3eyMGinEaJzEzkBEBvSdwJ8VKaNbk1w/viewform?usp=sharing&ouid=115070122108366484813" class="primary-link-btn" target="_blank">✉️ Googleフォームを開く</a>
-            </div>
-        </section>
-    </main>
+        <button id="downloadBtn">画像を保存 (PNG)</button>
+    </div>
 
     <script>
-        // 設定していただいたURL（キャッシュ対策付き）
-        const FAQ_TSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSrrCPPFRXOTL8Ji2ZiTd5Nc9ytNOD2Mdg7zCiH_cZjiFEZsY0vPUeGdEKi1FTjDUwsTPNZ5Q_O-qj_/pub?gid=0&single=true&output=tsv'; 
-        const CARDS_TSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSrrCPPFRXOTL8Ji2ZiTd5Nc9ytNOD2Mdg7zCiH_cZjiFEZsY0vPUeGdEKi1FTjDUwsTPNZ5Q_O-qj_/pub?gid=646055905&single=true&output=tsv';
+        const canvas = document.getElementById('cardCanvas');
+        const ctx = canvas.getContext('2d');
+        let cardImage = null;
+
+        let imgOffsetX = 0;
+        let imgOffsetY = 0;
+        let isDragging = false;
+        let startX, startY;
+
+        const inputs = [
+            'cardRuby', 'cardName', 'cardType', 'totalCost', 'colorCost', 'cardEffect', 
+            'cardPower', 'cardDamage', 'imageZoom', 'enableBurst', 
+            'burstType', 'burstTotalCost', 'burstColorCost', 'burstEffect'
+        ];
         
-        let allCardsData = [];
-        
-        // ★デッキデータの保存用変数（ローカルストレージから読み込み）
-        let myDeck = JSON.parse(localStorage.getItem('myTcgDeck')) || [];
-
-        function switchTab(tabId) {
-            document.querySelectorAll('.page-section').forEach(section => section.classList.remove('active'));
-            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById('page-' + tabId).classList.add('active');
-            document.getElementById('tab-' + tabId).classList.add('active');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-
-            if(tabId === 'faq' && !window.faqLoaded) loadFAQData();
-            if(tabId === 'cards' && !window.cardsLoaded) loadCardsData();
-            
-            // デッキタブを開いた時にデータがなければ読み込む
-            if(tabId === 'deck') {
-                if(!window.cardsLoaded) loadCardsData();
-                renderDeckList();
-            }
-        }
-
-        function parseColorTags(text) {
-            if(!text) return "";
-            let htmlText = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            const colorMap = {
-                '赤': 'text-red', 'red': 'text-red', '青': 'text-blue', 'blue': 'text-blue',
-                '緑': 'text-green', 'green': 'text-green', '紫': 'text-purple', 'purple': 'text-purple',
-                '橙': 'text-orange', 'orange': 'text-orange', '黄': 'text-yellow', 'yellow': 'text-yellow'
-            };
-            htmlText = htmlText.replace(/\[(.*?)\](.*?)\[\/.*?\]/g, (match, colorName, content) => {
-                const cssClass = colorMap[colorName];
-                return cssClass ? `<span class="${cssClass}">${content}</span>` : match;
-            });
-            return htmlText;
-        }
-
-        async function loadCardsData() {
-            try {
-                const response = await fetch(CARDS_TSV_URL + '&t=' + new Date().getTime());
-                if (!response.ok) throw new Error('ネットワークエラー');
-                const textData = await response.text();
-                const rows = textData.split('\n');
-                allCardsData = [];
-                for (let i = 1; i < rows.length; i++) {
-                    const columns = rows[i].split('\t');
-                    if (columns.length >= 6 && columns[1].trim() !== '') {
-                        allCardsData.push({
-                            ruby: columns[0]?.trim() || "", name: columns[1].trim(), type: columns[2]?.trim() || "",
-                            cost: columns[3]?.trim() || "", color: columns[4]?.trim() || "", effect: columns[5]?.trim() || "",
-                            power: columns[6]?.trim() || "", damage: columns[7]?.trim() || ""
-                        });
-                    }
-                }
-                window.cardsLoaded = true;
-                // 通常カード画面とデッキビルダー画面の両方を描画
-                renderCards(allCardsData, 'cards-container');
-                renderCards(allCardsData, 'deck-cards-container', true);
-            } catch (error) {
-                console.error('カード読み込みエラー:', error);
-                document.getElementById('cards-container').innerHTML = '<p style="color:red; text-align:center;">読み込み失敗</p>';
-                document.getElementById('deck-cards-container').innerHTML = '<p style="color:red; text-align:center;">読み込み失敗</p>';
-            }
-        }
-
-        function filterCards(targetContainerId) {
-            let keywordId = targetContainerId === 'cards-container' ? 'searchKeyword' : 'deckSearchKeyword';
-            const keyword = document.getElementById(keywordId).value.toLowerCase();
-            
-            // 色フィルターは通常カードリスト画面のみ存在
-            let colorFilter = "";
-            if (document.getElementById('searchColor') && targetContainerId === 'cards-container') {
-                colorFilter = document.getElementById('searchColor').value;
-            }
-
-            const filteredCards = allCardsData.filter(card => {
-                const matchKeyword = !keyword || card.name.toLowerCase().includes(keyword) || 
-                                     card.ruby.toLowerCase().includes(keyword) || card.effect.toLowerCase().includes(keyword);
-                const matchColor = !colorFilter || card.color.includes(colorFilter);
-                return matchKeyword && matchColor;
-            });
-            
-            // デッキビルダー用の描画かどうかを判定して渡す
-            const isDeckBuilder = targetContainerId === 'deck-cards-container';
-            renderCards(filteredCards, targetContainerId, isDeckBuilder);
-        }
-
-        // isDeckBuilderがtrueの時は、クリック時に「デッキに追加」する機能を付与
-        function renderCards(cardsArray, containerId, isDeckBuilder = false) {
-            const container = document.getElementById(containerId);
-            if(!container) return;
-            container.innerHTML = '';
-            
-            if(cardsArray.length === 0) {
-                container.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: #718096; padding: 40px;">見つかりませんでした。</p>';
-                return;
-            }
-            
-            const colorClassMap = { '赤': 'attr-red', '青': 'attr-blue', '緑': 'attr-green', '黄': 'attr-yellow', '橙': 'attr-orange', '紫': 'attr-purple' };
-            cardsArray.forEach(card => {
-                const firstColorChar = card.color ? card.color.charAt(0) : '';
-                const attrClass = colorClassMap[firstColorChar] || '';
-                let displayEffect = parseColorTags(card.effect);
-                let statsHtml = '';
-                if(card.power || card.damage) {
-                    statsHtml = `<div class="card-stats">`;
-                    if(card.power) statsHtml += `<div class="card-power">Pow: ${card.power}</div>`;
-                    if(card.damage) statsHtml += `<div class="card-damage">Dmg: ${card.damage}</div>`;
-                    statsHtml += `</div>`;
-                }
-                
-                // デッキビルダー用のクリックイベントを追加
-                const clickAction = isDeckBuilder ? `onclick="addToDeck('${card.name}')" title="クリックでデッキに追加"` : "";
-                
-                const cardHtml = `
-                    <div class="card-item ${attrClass}" ${clickAction}>
-                        <div class="card-header">
-                            <div class="card-name-area">
-                                <div class="card-ruby">${card.ruby}</div>
-                                <h3 class="card-name" style="${isDeckBuilder ? 'font-size: 16px;' : ''}">${card.name}</h3>
-                            </div>
-                            <div class="card-cost" style="${isDeckBuilder ? 'width:30px; height:30px; font-size:18px;' : ''}">${card.cost}</div>
-                        </div>
-                        <div class="card-type" style="${isDeckBuilder ? 'font-size: 12px; margin-bottom:5px;' : ''}">${card.type}</div>
-                        <div class="card-effect" style="${isDeckBuilder ? 'font-size: 12px; min-height:40px;' : ''}">${displayEffect}</div>
-                        ${statsHtml}
-                    </div>
-                `;
-                container.insertAdjacentHTML('beforeend', cardHtml);
-            });
-        }
-
-        // ★★★ デッキ構築のロジック ★★★
-
-        function addToDeck(cardName) {
-            // ルール1：デッキは40枚まで
-            if (myDeck.length >= 40) {
-                alert("デッキは最大40枚までです！");
-                return;
-            }
-            // ルール2：同名カードは3枚まで
-            const count = myDeck.filter(name => name === cardName).length;
-            if (count >= 3) {
-                alert(`「${cardName}」はすでに3枚入っています！`);
-                return;
-            }
-            // デッキに追加して保存＆再描画
-            myDeck.push(cardName);
-            saveDeck();
-            renderDeckList();
-        }
-
-        function removeFromDeck(cardName) {
-            // その名前のカードが配列のどこにあるか探し、1枚だけ消す
-            const index = myDeck.indexOf(cardName);
-            if (index !== -1) {
-                myDeck.splice(index, 1);
-                saveDeck();
-                renderDeckList();
-            }
-        }
-
-        function clearDeck() {
-            if(confirm("デッキをすべて空にしますか？")) {
-                myDeck = [];
-                saveDeck();
-                renderDeckList();
-            }
-        }
-
-        function saveDeck() {
-            // ブラウザにデッキの中身を保存
-            localStorage.setItem('myTcgDeck', JSON.stringify(myDeck));
-        }
-
-        function renderDeckList() {
-            const listDisplay = document.getElementById('deck-list-display');
-            const countDisplay = document.getElementById('deck-count-display');
-            listDisplay.innerHTML = '';
-            
-            // 枚数表示の更新
-            countDisplay.innerText = `${myDeck.length} / 40`;
-            if (myDeck.length === 40) {
-                countDisplay.style.color = 'var(--primary-color)';
+        inputs.forEach(id => {
+            if (id === 'enableBurst') {
+                document.getElementById(id).addEventListener('change', (e) => {
+                    document.getElementById('burstPanel').style.display = e.target.checked ? 'flex' : 'none';
+                    drawCard();
+                });
             } else {
-                countDisplay.style.color = '#718096'; // 40枚未満はグレー
+                document.getElementById(id).addEventListener('input', drawCard);
             }
+        });
 
-            if(myDeck.length === 0) {
-                listDisplay.innerHTML = '<li style="text-align:center; padding: 20px; color: #a0aec0;">カードがありません</li>';
+        document.getElementById('imageInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        cardImage = img;
+                        document.getElementById('imageZoom').value = 1;
+                        
+                        const scale = Math.max(580 / img.width, 390 / img.height);
+                        imgOffsetX = (580 - (img.width * scale)) / 2;
+                        imgOffsetY = (390 - (img.height * scale)) / 2;
+                        drawCard();
+                    }
+                    img.src = event.target.result;
+                }
+                reader.readAsDataURL(file);
+            } else {
+                cardImage = null;
+                drawCard();
+            }
+        });
+
+        // マウス ＆ タッチ の両方の座標を取得する関数
+        function getCoords(e) {
+            if (e.touches && e.touches.length > 0) {
+                return { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
+            }
+            return { clientX: e.clientX, clientY: e.clientY };
+        }
+
+        function handleStart(e) {
+            if (!cardImage) return;
+            const coords = getCoords(e);
+            const rect = canvas.getBoundingClientRect();
+            const x = (coords.clientX - rect.left) * (canvas.width / rect.width);
+            const y = (coords.clientY - rect.top) * (canvas.height / rect.height);
+
+            if (x >= 35 && x <= 615 && y >= 155 && y <= 545) {
+                isDragging = true;
+                startX = x;
+                startY = y;
+                canvas.style.cursor = 'grabbing';
+            }
+        }
+
+        function handleMove(e) {
+            if (!cardImage) return;
+            const coords = getCoords(e);
+            const rect = canvas.getBoundingClientRect();
+            const x = (coords.clientX - rect.left) * (canvas.width / rect.width);
+            const y = (coords.clientY - rect.top) * (canvas.height / rect.height);
+
+            if (!isDragging) {
+                if (x >= 35 && x <= 615 && y >= 155 && y <= 545) {
+                    canvas.style.cursor = 'grab';
+                } else {
+                    canvas.style.cursor = 'default';
+                }
                 return;
             }
 
-            // カード名ごとに枚数を集計する
-            const deckCounts = {};
-            myDeck.forEach(name => {
-                deckCounts[name] = (deckCounts[name] || 0) + 1;
-            });
-
-            // 集計結果を右側のリストに表示する
-            for (const [cardName, count] of Object.entries(deckCounts)) {
-                // そのカードの属性色を取得する（枠線の色付け用・省略可）
-                const cardData = allCardsData.find(c => c.name === cardName);
-                let colorBorder = '#e2e8f0';
-                if(cardData) {
-                    if(cardData.color.includes('赤')) colorBorder = '#ff4444';
-                    if(cardData.color.includes('青')) colorBorder = '#4444ff';
-                    if(cardData.color.includes('緑')) colorBorder = '#44aa44';
-                    if(cardData.color.includes('黄')) colorBorder = '#ffcc00';
-                    if(cardData.color.includes('紫')) colorBorder = '#aa44cc';
-                }
-
-                const li = document.createElement('li');
-                li.className = 'deck-list-item';
-                li.style.borderLeft = `4px solid ${colorBorder}`;
-                li.innerHTML = `<span>${cardName}</span> <span class="card-count-badge">${count}枚</span>`;
-                // クリックで1枚削除
-                li.onclick = () => removeFromDeck(cardName);
-                listDisplay.appendChild(li);
+            // スマホでのドラッグ中に画面自体がスクロールするのを防ぐ
+            if(e.cancelable) {
+                e.preventDefault(); 
             }
+
+            const dx = x - startX;
+            const dy = y - startY;
+            
+            imgOffsetX += dx;
+            imgOffsetY += dy;
+            
+            startX = x;
+            startY = y;
+            
+            drawCard();
         }
 
-        // ★★★ FAQのロジック ★★★
-        async function loadFAQData() {
-            const container = document.getElementById('faq-container');
-            try {
-                const response = await fetch(FAQ_TSV_URL + '&t=' + new Date().getTime());
-                if (!response.ok) throw new Error('ネットワークエラー');
-                const textData = await response.text();
-                const rows = textData.split('\n'); 
-                container.innerHTML = ''; 
-                for (let i = 1; i < rows.length; i++) {
-                    const columns = rows[i].split('\t'); 
-                    if (columns.length >= 2) {
-                        const question = columns[0].trim();
-                        const answer = columns[1].trim();
-                        if (question && answer) {
-                            const details = document.createElement('details');
-                            const summary = document.createElement('summary');
-                            const p = document.createElement('p');
-                            summary.textContent = 'Q. ' + question;
-                            p.textContent = 'A. ' + answer;
-                            details.appendChild(summary);
-                            details.appendChild(p);
-                            container.appendChild(details);
+        function handleEnd() {
+            isDragging = false;
+            canvas.style.cursor = 'default';
+        }
+
+        // PC向けマウスイベント
+        canvas.addEventListener('mousedown', handleStart);
+        canvas.addEventListener('mousemove', handleMove, { passive: false });
+        canvas.addEventListener('mouseup', handleEnd);
+        canvas.addEventListener('mouseleave', handleEnd);
+
+        // スマホ向けタッチイベント
+        canvas.addEventListener('touchstart', handleStart, { passive: false });
+        canvas.addEventListener('touchmove', handleMove, { passive: false });
+        canvas.addEventListener('touchend', handleEnd);
+        canvas.addEventListener('touchcancel', handleEnd);
+
+
+        // 色タグパーサー
+        function wrapTextRich(context, text, x, y, maxWidth, lineHeight, defaultColor) {
+            const paragraphs = text.split('\n');
+            const colorMap = {
+                '赤': '#d9534f', 'red': '#d9534f',
+                '青': '#0275d8', 'blue': '#0275d8',
+                '緑': '#5cb85c', 'green': '#5cb85c',
+                '紫': '#8e44ad', 'purple': '#8e44ad',
+                '橙': '#f39c12', 'orange': '#f39c12',
+                '黄': '#f0ad4e', 'yellow': '#f0ad4e'
+            };
+            
+            for (let i = 0; i < paragraphs.length; i++) {
+                let p = paragraphs[i];
+                let chars = [];
+                let currentColor = defaultColor;
+                let j = 0;
+                
+                while (j < p.length) {
+                    let match = p.substr(j).match(/^\[(\/?)([^\]]+)\]/);
+                    if (match) {
+                        if (match[1] === '/') {
+                            currentColor = defaultColor; 
+                        } else {
+                            currentColor = colorMap[match[2]] || defaultColor; 
                         }
+                        j += match[0].length;
+                        continue;
+                    }
+                    chars.push({ char: p[j], color: currentColor });
+                    j++;
+                }
+
+                if (chars.length === 0) {
+                    y += lineHeight; 
+                    continue;
+                }
+
+                let lineStr = "";
+                let lineChars = [];
+                
+                for (let n = 0; n < chars.length; n++) {
+                    let c = chars[n];
+                    let testLineStr = lineStr + c.char;
+                    let metrics = context.measureText(testLineStr);
+                    
+                    if (metrics.width > maxWidth && n > 0) {
+                        drawChunks(context, lineChars, x, y);
+                        y += lineHeight;
+                        lineStr = c.char;
+                        lineChars = [c];
+                    } else {
+                        lineStr = testLineStr;
+                        lineChars.push(c);
                     }
                 }
-                window.faqLoaded = true;
-            } catch (error) {
-                console.error('FAQ読み込みエラー:', error);
-                container.innerHTML = '<p style="color:red; text-align:center;">データの読み込みに失敗しました。</p>';
+                if (lineChars.length > 0) {
+                    drawChunks(context, lineChars, x, y);
+                    y += lineHeight;
+                }
             }
         }
+
+        function drawChunks(context, lineChars, startX, y) {
+            if (lineChars.length === 0) return;
+            let chunks = [];
+            let currentChunk = { text: '', color: lineChars[0].color };
+            
+            for (let c of lineChars) {
+                if (c.color === currentChunk.color) {
+                    currentChunk.text += c.char;
+                } else {
+                    chunks.push(currentChunk);
+                    currentChunk = { text: c.char, color: c.color };
+                }
+            }
+            chunks.push(currentChunk);
+            
+            let currentX = startX;
+            for (let chunk of chunks) {
+                context.fillStyle = chunk.color;
+                context.fillText(chunk.text, currentX, y);
+                currentX += context.measureText(chunk.text).width;
+            }
+        }
+
+        function drawCard() {
+            const ruby = document.getElementById('cardRuby').value;
+            const name = document.getElementById('cardName').value;
+            const type = document.getElementById('cardType').value;
+            const tCostStr = document.getElementById('totalCost').value;
+            const cCostStr = document.getElementById('colorCost').value;
+            const effect = document.getElementById('cardEffect').value;
+            const power = document.getElementById('cardPower').value;
+            const damage = document.getElementById('cardDamage').value;
+            
+            const hasBurst = document.getElementById('enableBurst').checked;
+
+            const colorMap = {
+                '赤': '#ff4444',
+                '青': '#4444ff',
+                '黄': '#ffcc00',
+                '緑': '#44aa44',
+                '橙': '#ff8800',
+                '紫': '#aa44cc'
+            };
+            
+            const lightColorMap = {
+                '赤': '#ffeaea',
+                '青': '#eaebff',
+                '黄': '#fffcea',
+                '緑': '#eaffea',
+                '橙': '#fff3ea',
+                '紫': '#f5eaff',
+                'default': '#f9f9f9'
+            };
+
+            const firstColorChar = cCostStr.charAt(0);
+            const mainColor = colorMap[firstColorChar] || '#cccccc'; 
+            const bgLightColor = lightColorMap[firstColorChar] || lightColorMap['default'];
+
+            ctx.fillStyle = '#1e1e1e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = mainColor;
+            ctx.beginPath();
+            ctx.arc(75, 75, 42, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#ffffff';
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 46px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(tCostStr, 75, 92);
+            ctx.textAlign = 'left';
+
+            ctx.fillStyle = '#aaaaaa';
+            ctx.font = '20px sans-serif';
+            ctx.fillText(ruby, 135, 42);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 40px sans-serif';
+            ctx.fillText(name, 135, 88);
+
+            const tCost = parseInt(tCostStr) || 0;
+            let circleColors = [];
+            for (let char of cCostStr) {
+                if (colorMap[char]) {
+                    circleColors.push(colorMap[char]);
+                }
+            }
+            while (circleColors.length < tCost) {
+                circleColors.push('#ffffff'); 
+            }
+
+            const drawCount = Math.max(tCost, circleColors.length);
+            for (let i = 0; i < drawCount; i++) {
+                const color = circleColors[i] || '#ffffff';
+                const cx = 145 + (i * 32); 
+                const cy = 125; 
+
+                ctx.beginPath();
+                ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+                ctx.fillStyle = color;
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#000';
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(cx - 4, cy - 4, 4, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.fill();
+            }
+
+            if (cardImage) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(35, 155, 580, 390);
+                ctx.clip(); 
+
+                const baseScale = Math.max(580 / cardImage.width, 390 / cardImage.height);
+                const zoom = parseFloat(document.getElementById('imageZoom').value) || 1;
+                const finalScale = baseScale * zoom;
+
+                const scaledW = cardImage.width * finalScale;
+                const scaledH = cardImage.height * finalScale;
+
+                const minOffsetX = 580 - scaledW;
+                const minOffsetY = 390 - scaledH;
+
+                if (imgOffsetX > 0) imgOffsetX = 0;
+                if (imgOffsetX < minOffsetX) imgOffsetX = minOffsetX;
+                if (imgOffsetY > 0) imgOffsetY = 0;
+                if (imgOffsetY < minOffsetY) imgOffsetY = minOffsetY;
+
+                ctx.drawImage(cardImage, 35 + imgOffsetX, 155 + imgOffsetY, scaledW, scaledH);
+                ctx.restore();
+            } else {
+                ctx.fillStyle = '#333333';
+                ctx.fillRect(35, 155, 580, 390);
+                ctx.fillStyle = '#666666';
+                ctx.font = '28px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('NO IMAGE', 325, 360);
+                ctx.textAlign = 'left';
+            }
+            
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#444';
+            ctx.strokeRect(35, 155, 580, 390);
+
+            // ==========================================
+            // テキスト枠
+            // ==========================================
+            ctx.fillStyle = bgLightColor;
+            ctx.fillRect(35, 565, 580, 250);
+
+            if (hasBurst) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.04)';
+                ctx.fillRect(35, 715, 580, 100);
+            }
+            
+            ctx.strokeRect(35, 565, 580, 250);
+
+            const traitY = hasBurst ? 595 : 605;
+            ctx.fillStyle = '#222222';
+            ctx.font = 'bold 26px sans-serif';
+            ctx.fillText(type, 55, traitY);
+            
+            const traitLineY = hasBurst ? 605 : 615;
+            ctx.beginPath();
+            ctx.moveTo(55, traitLineY);
+            ctx.lineTo(615, traitLineY);
+            ctx.strokeStyle = '#cccccc';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            if (hasBurst) {
+                ctx.font = '22px sans-serif';
+                wrapTextRich(ctx, effect, 55, 635, 540, 30, '#111111'); 
+
+                ctx.beginPath();
+                ctx.moveTo(35, 715);
+                ctx.lineTo(615, 715);
+                ctx.strokeStyle = '#888888'; 
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                const bType = document.getElementById('burstType').value;
+                ctx.fillStyle = '#111111';
+                ctx.font = 'bold 24px sans-serif';
+                ctx.fillText(bType, 55, 745);
+
+                const bTypeWidth = ctx.measureText(bType).width;
+                const bIconStartX = 55 + bTypeWidth + 15;
+                
+                const bTCostStr = document.getElementById('burstTotalCost').value;
+                const bCCostStr = document.getElementById('burstColorCost').value;
+                const bTCost = parseInt(bTCostStr) || 0;
+                let bCircleColors = [];
+                for (let char of bCCostStr) {
+                    if (colorMap[char]) bCircleColors.push(colorMap[char]);
+                }
+                while (bCircleColors.length < bTCost) {
+                    bCircleColors.push('#ffffff'); 
+                }
+                
+                const bDrawCount = Math.max(bTCost, bCircleColors.length);
+                for (let i = 0; i < bDrawCount; i++) {
+                    const color = bCircleColors[i] || '#ffffff';
+                    const cx = bIconStartX + (i * 22); 
+                    const cy = 737; 
+
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, 9, 0, Math.PI * 2); 
+                    ctx.fillStyle = color;
+                    ctx.fill();
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeStyle = '#000';
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.arc(cx - 2, cy - 2, 2.5, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                    ctx.fill();
+                }
+
+                const bEffect = document.getElementById('burstEffect').value;
+                ctx.font = '22px sans-serif';
+                wrapTextRich(ctx, bEffect, 55, 775, 540, 30, '#111111');
+
+            } else {
+                ctx.font = '24px sans-serif';
+                wrapTextRich(ctx, effect, 55, 655, 540, 36, '#111111'); 
+            }
+
+            if (power || damage) {
+                ctx.fillStyle = '#222222';
+                ctx.fillRect(35, 835, 580, 55);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 28px sans-serif';
+                ctx.textAlign = 'right';
+                
+                let statsText = '';
+                if (power) statsText += `Power: ${power}`;
+                if (damage) statsText += `   打点: ${damage}`;
+                
+                ctx.fillText(statsText, 600, 874);
+                ctx.textAlign = 'left'; 
+            }
+        }
+
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            let fileName = document.getElementById('cardName').value;
+            if(fileName === "ここに名前を入力" || fileName.trim() === "") {
+                fileName = "no_name_card";
+            }
+            const link = document.createElement('a');
+            link.download = `${fileName}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+
+        drawCard();
     </script>
 </body>
 </html>
